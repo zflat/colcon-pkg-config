@@ -24,13 +24,15 @@ class PkgConfigEnvironment(EnvironmentExtensionPoint):
 
     def create_environment_hooks(self, prefix_path, pkg_name):  # noqa: D102
         environment_hooks = []
-        subdirectories = [Path('lib') / 'pkgconfig',
-                          Path('share') / 'pkgconfig']
+        subdirectories = [Path('share') / 'pkgconfig'] \
+            + [(p / 'pkgconfig').relative_to(prefix_path)
+               for p in prefix_path.glob('lib*')]
         for subdirectory in subdirectories:
             full_pkgconfig_path = prefix_path / subdirectory
             logger.log(1, "checking '%s' for .pc files" % full_pkgconfig_path)
             if any(full_pkgconfig_path.glob('*.pc')):
                 environment_hooks += create_environment_hook(
-                    'pkg_config', prefix_path, pkg_name, 'PKG_CONFIG_PATH',
+                    'pkg_config_%s' % subdirectory.parent.name,
+                    prefix_path, pkg_name, 'PKG_CONFIG_PATH',
                     str(subdirectory), mode='prepend')
         return environment_hooks
